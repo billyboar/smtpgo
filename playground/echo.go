@@ -31,6 +31,7 @@ func handleConnection(c net.Conn) {
 	}
 	for {
 		n, err := c.Read(buf)
+		fmt.Println(string(buf[0:n]))
 		if err != nil || n == 0 {
 			c.Close()
 			break
@@ -46,10 +47,25 @@ func handleConnection(c net.Conn) {
 
 func checker(command string, c net.Conn) {
 	//fmt.Println(command)
-	if command == "EHLO" {
-		n, err := c.Write([]byte("Hello Yourself\n"))
+	/*
+		if command == "EHLO" {
+			n, err := c.Write([]byte("Hello Yourself\n"))
+			if err != nil || n == 0 {
+				c.Close()
+			}
+		}
+	*/
+	if command != "DATA" {
+		n, err := c.Write([]byte("250 OK\n"))
 		if err != nil || n == 0 {
 			c.Close()
+			//break
+		}
+	} else {
+		n, err := c.Write([]byte("354 OK\n"))
+		if err != nil || n == 0 {
+			c.Close()
+			//break
 		}
 	}
 }
