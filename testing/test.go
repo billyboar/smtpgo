@@ -2,7 +2,8 @@ package main
 
 import (
 	"fmt"
-	"smtpgo"
+
+	"github.com/billyboar/smtpgo"
 )
 
 func main() {
