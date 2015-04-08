@@ -1,4 +1,4 @@
-package session
+package smtpgo
 
 import (
 	"fmt"
@@ -24,8 +24,10 @@ func (server *Server) NewSession(conn net.Conn) (s *session, err error) {
 
 func (s *session) HandleConnection() {
 	defer s.conn.Close()
-	var from string
-	var to []string
+	/*
+		var from string
+		var to []string
+	*/
 	buf := make([]byte, 4096)
 
 	s.remoteIP, _, _ = net.SplitHostPort(s.conn.RemoteAddr().String())
@@ -37,14 +39,14 @@ func (s *session) HandleConnection() {
 	}
 
 	//greet here
-	_, err := s.conn.Write([]byte(fmt.Sprintf("220 %s %s SMTP service ready", s.server.Hostname, s.server.Appname)))
+	_, err = s.conn.Write([]byte(fmt.Sprintf("220 %s %s SMTP service ready", s.server.Hostname, s.server.Appname)))
 	for {
-		n, err := c.Read(buf)
+		n, err := s.conn.Read(buf)
 
 		//Print client commands
 		fmt.Println(string(buf[0:n]))
 		if err != nil || n == 0 {
-			c.Close()
+			s.conn.Close()
 			break
 		}
 		//exclude new line characters
@@ -53,7 +55,7 @@ func (s *session) HandleConnection() {
 
 		switch command {
 		case "EHLO", "HELO":
-			server.remoteName = args
+			s.remoteName = args
 			//server.conn.
 			s.Writef("250 %s greets %s", s.server.Hostname, s.remoteName)
 		}
@@ -65,10 +67,10 @@ func ParseCommand(line string) (command string, args string) {
 		command = strings.ToUpper(line[:i])
 		args = strings.TrimSpace(line[i+1 : len(line)])
 	} else {
-		verb = strings.ToUpper(line)
+		command = strings.ToUpper(line)
 		args = ""
 	}
-	return verb, args
+	return command, args
 }
 
 func (s *session) Writef(format string, args ...interface{}) {

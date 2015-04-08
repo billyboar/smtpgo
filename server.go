@@ -1,4 +1,4 @@
-package server
+package smtpgo
 
 import (
 	"log"
@@ -13,11 +13,13 @@ type Server struct {
 	Port     string // server port
 }
 
-func StartServer(addr string, appname, string, hostname string, port string) error {
-	server := &Server{Addr: addr,
+func StartServer(addr string, appname string, hostname string, port string) error {
+	server := &Server{
+		Addr:     addr,
 		Appname:  appname,
 		Hostname: hostname,
-		Port:     port}
+		Port:     port,
+	}
 	return server.Start()
 }
 
