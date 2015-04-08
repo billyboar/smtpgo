@@ -3,6 +3,7 @@ package smtpgo
 import (
 	"fmt"
 	"net"
+	"regexp"
 	"strings"
 )
 
@@ -13,6 +14,11 @@ type session struct {
 	remoteHost string
 	remoteName string
 }
+
+var (
+	mailFromRE = regexp.MustCompile(`[Ff][Rr][Oo][Mm]:<(.*)>`) //MAIL FROM: <email address>
+	rcptToRe   = regexp.MustCompile(`[Tt][Oo]:<(.+)>`)
+)
 
 func (server *Server) NewSession(conn net.Conn) (s *session, err error) {
 	s = &session{
@@ -39,7 +45,7 @@ func (s *session) HandleConnection() {
 	}
 
 	//greet here
-	_, err = s.conn.Write([]byte(fmt.Sprintf("220 %s %s SMTP service ready", s.server.Hostname, s.server.Appname)))
+	s.Writef("220 %s %s SMTP service ready\n", s.server.Hostname, s.server.Appname)
 	for {
 		n, err := s.conn.Read(buf)
 
@@ -54,10 +60,23 @@ func (s *session) HandleConnection() {
 		command, args := ParseCommand(line)
 
 		switch command {
+
+		//Greeting server
 		case "EHLO", "HELO":
+
 			s.remoteName = args
-			//server.conn.
 			s.Writef("250 %s greets %s", s.server.Hostname, s.remoteName)
+
+		//getting receipt's email address
+		case "MAIL":
+
+			mailFrom := mailFromRE.FindStringSubmatch(args)
+			if mailFrom == nil {
+				s.Writef("501 Syntax error in parameters or arguments (invalid FROM parameter)")
+			} else {
+				fmt.Println(mailFrom)
+			}
+
 		}
 	}
 }
@@ -74,5 +93,8 @@ func ParseCommand(line string) (command string, args string) {
 }
 
 func (s *session) Writef(format string, args ...interface{}) {
-	s.conn.Write([]byte(fmt.Sprintf(format, args...)))
+	_, err := s.conn.Write([]byte(fmt.Sprintf(format, args...)))
+	if err != nil {
+		fmt.Println("Error: ", err)
+	}
 }
