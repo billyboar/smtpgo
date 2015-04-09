@@ -44,6 +44,8 @@ func (s *session) HandleConnection() {
 		s.remoteHost = "unknown"
 	}
 
+	fmt.Println("Connection established from: %v.", s.remoteIP)
+
 	//greet here
 	s.Writef("220 %s %s SMTP service ready\n", s.server.Hostname, s.server.Appname)
 	for {
@@ -65,20 +67,26 @@ func (s *session) HandleConnection() {
 		case "EHLO", "HELO":
 
 			s.remoteName = args
-			s.Writef("250 %s greets %s", s.server.Hostname, s.remoteName)
+			s.Writef("250 %s greets %s\n", s.server.Hostname, s.remoteName)
 
 		//getting receipt's email address
 		case "MAIL":
 
 			mailFrom := mailFromRE.FindStringSubmatch(args)
 			if mailFrom == nil {
-				s.Writef("501 Syntax error in parameters or arguments (invalid FROM parameter)")
+				s.Writef("501 Syntax error in parameters or arguments (invalid FROM parameter)\n")
 			} else {
 				fmt.Println(mailFrom)
 			}
 
+		case "QUIT":
+			break
+
+		default:
+			s.Writef("500 Syntax error, command unrecognized\n")
 		}
 	}
+	fmt.Println("Connection from %v is closed.", s.remoteIP)
 }
 
 func ParseCommand(line string) (command string, args string) {
