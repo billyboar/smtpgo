@@ -1,6 +1,7 @@
 package smtpgo
 
 import (
+	"bufio"
 	"fmt"
 	"net"
 	"regexp"
@@ -13,6 +14,8 @@ type session struct {
 	remoteIP   string
 	remoteHost string
 	remoteName string
+	br         *bufio.Reader
+	bw         *bufio.Writer
 }
 
 var (
@@ -24,6 +27,8 @@ func (server *Server) NewSession(conn net.Conn) (s *session, err error) {
 	s = &session{
 		server: server,
 		conn:   conn,
+		br:     bufio.NewReader(conn),
+		bw:     bufio.NewWriter(conn),
 	}
 	return
 }
@@ -34,7 +39,7 @@ func (s *session) HandleConnection() {
 		var from string
 		var to []string
 	*/
-	buf := make([]byte, 4096)
+	//buf := make([]byte, 4096)
 
 	s.remoteIP, _, _ = net.SplitHostPort(s.conn.RemoteAddr().String())
 	names, err := net.LookupAddr(s.remoteIP)
@@ -49,17 +54,28 @@ func (s *session) HandleConnection() {
 	//greet here
 	s.Writef("220 %s %s SMTP service ready\n", s.server.Hostname, s.server.Appname)
 	for {
-		n, err := s.conn.Read(buf)
+		//n, err := s.conn.Read(buf)
+		test_x, err := s.br.ReadSlice('\n')
+		if err != nil {
+			fmt.Println("Error occured while reading: ", err)
+			return
+		}
 
 		//Print client commands
-		fmt.Println(string(buf[0:n]))
-		if err != nil || n == 0 {
-			s.conn.Close()
-			break
-		}
+		//fmt.Println(string(buf[0:n]))
+
+		/*
+			if err != nil || n == 0 {
+				s.conn.Close()
+				break
+			}
+		*/
 		//exclude new line characters
-		line := string(buf[0 : n-2])
+		//line := string(buf[0 : n-2])
+		line := string(test_x[0 : len(test_x)-2])
 		command, args := ParseCommand(line)
+		fmt.Println("command: ", command)
+		fmt.Println("line: ", line)
 
 		switch command {
 
@@ -80,7 +96,8 @@ func (s *session) HandleConnection() {
 			}
 
 		case "QUIT":
-			break
+			//break
+			return
 
 		default:
 			s.Writef("500 Syntax error, command unrecognized\n")
