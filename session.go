@@ -52,7 +52,8 @@ func (s *session) HandleConnection() {
 	fmt.Println("Connection established from: %v.", s.remoteIP)
 
 	//greet here
-	s.Writef("220 %s %s SMTP service ready\n", s.server.Hostname, s.server.Appname)
+	//s.Writef("220 %s %s SMTP service ready\n", s.server.Hostname, s.server.Appname)
+	s.sendlinef("220 %s %s SMTP service ready\n", s.server.Hostname, s.server.Appname)
 	for {
 		//n, err := s.conn.Read(buf)
 		test_x, err := s.br.ReadSlice('\n')
@@ -83,14 +84,16 @@ func (s *session) HandleConnection() {
 		case "EHLO", "HELO":
 
 			s.remoteName = args
-			s.Writef("250 %s greets %s\n", s.server.Hostname, s.remoteName)
+			//s.Writef("250 %s greets %s\n", s.server.Hostname, s.remoteName)
+			s.sendlinef("250 %s greets %s\n", s.server.Hostname, s.remoteName)
 
 		//getting receipt's email address
 		case "MAIL":
 
 			mailFrom := mailFromRE.FindStringSubmatch(args)
 			if mailFrom == nil {
-				s.Writef("501 Syntax error in parameters or arguments (invalid FROM parameter)\n")
+				//s.Writef("501 Syntax error in parameters or arguments (invalid FROM parameter)\n")
+				s.sendlinef("501 Syntax error in parameters or arguments (invalid FROM parameter)\n")
 			} else {
 				fmt.Println(mailFrom)
 			}
@@ -100,7 +103,8 @@ func (s *session) HandleConnection() {
 			return
 
 		default:
-			s.Writef("500 Syntax error, command unrecognized\n")
+			//s.Writef("500 Syntax error, command unrecognized\n")
+			s.sendlinef("500 Syntax error, command unrecognized\n")
 		}
 	}
 	fmt.Println("Connection from %v is closed.", s.remoteIP)
@@ -122,4 +126,9 @@ func (s *session) Writef(format string, args ...interface{}) {
 	if err != nil {
 		fmt.Println("Error: ", err)
 	}
+}
+
+func (s *session) sendlinef(format string, args ...interface{}) {
+	fmt.Fprintf(s.bw, format, args...)
+	s.bw.Flush()
 }
